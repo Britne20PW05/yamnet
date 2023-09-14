@@ -1,0 +1,53 @@
+import pyaudio
+import wave
+import datetime
+import os
+
+formats = pyaudio.paInt16
+channels = 1
+sample_rate = 16000
+chunk = 1024
+duration = 1
+
+output_folder = "audio_recordings"
+os.makedirs(output_folder, exist_ok=True)
+
+audio = pyaudio.PyAudio()
+
+# Open a microphone stream
+stream = audio.open(format=formats,
+                    channels=channels,
+                    rate=sample_rate,
+                    input=True,
+                    frames_per_buffer=chunk)
+
+print("Recording...")
+
+try:
+    while True:
+        frames = []
+
+        # Record audio for RECORD_SECONDS
+        for _ in range(0, int(sample_rate / chunk * duration)):
+            data = stream.read(chunk)
+            frames.append(data)
+
+        # Generate a unique filename with timestamp
+        current_time = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = os.path.join(output_folder, f"output_{current_time}.wav")
+
+        # Save the audio clip to a WAV file
+        wf = wave.open(filename, "wb")
+        wf.setnchannels(channels)
+        wf.setsampwidth(audio.get_sample_size(formats))
+        wf.setframerate(sample_rate)
+        wf.writeframes(b"".join(frames))
+        wf.close()
+
+except KeyboardInterrupt:
+    print("Recording stopped.")
+
+# Clean up
+stream.stop_stream()
+stream.close()
+audio.terminate()
